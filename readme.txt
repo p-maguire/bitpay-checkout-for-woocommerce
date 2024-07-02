@@ -111,6 +111,9 @@ You can contact our support team via the following form https://bitpay.com/reque
 
 == Changelog ==
 
+= 5.5.1 =
+* Fixed issue with payment logo url
+
 = 5.5.0 =
 * Tested compatibility with WordPress 6.5.2
 
