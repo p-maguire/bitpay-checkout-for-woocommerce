@@ -8,7 +8,11 @@ namespace BitPayLib;
  * Plugin Name: BitPay Checkout for WooCommerce
  * Plugin URI: https://www.bitpay.com
  * Description: BitPay Checkout Plugin
+<<<<<<< HEAD
  * Version: 6.0.0
+=======
+ * Version: 5.5.1
+>>>>>>> origin/master
  * Author: BitPay
  * Author URI: mailto:integrations@bitpay.com?subject=BitPay Checkout for WooCommerce
  */
@@ -259,6 +263,16 @@ class WcGatewayBitpay extends \WC_Payment_Gateway {
 				'options'     => $wc_statuses_arr,
 				'default'     => 'wc-processing',
 			),
+			'bitpay_checkout_order_process_refund'      => array(
+				'title'       => __( 'BitPay Process Refund Status', 'woocommerce' ),
+				'type'        => 'select',
+				'description' => __( 'If set to <b>Yes</b>, automatically set the order to "refunded" when the invoice has a "refund_success" status, as notified by the BitPay IPN.', 'woocommerce' ),
+				'options'     => array(
+					'0' => 'No',
+					'1' => 'Yes',
+				),
+				'default'     => '1',
+			),
 			'bitpay_checkout_order_expired_status'      => array(
 				'title'       => __( 'BitPay Expired Status', 'woocommerce' ),
 				'type'        => 'select',
@@ -299,7 +313,7 @@ class WcGatewayBitpay extends \WC_Payment_Gateway {
 	private function get_icon_on_payment_page(): string {
 		$settings = new BitPayPaymentSettings();
 
-		return $settings->get_payment_logo_url() . '" id="bitpay_logo';
+		return add_query_arg( 'id', 'bitpay_logo', $settings->get_payment_logo_url() );
 	}
 
 	private function get_processing_link(): string {

@@ -38,12 +38,13 @@ class BitPayIpnProcess {
 	}
 
 	public function execute( WP_REST_Request $request ): void {
-		$data = $request->get_body();
-
-		$data       = json_decode( $data, true, 512, JSON_THROW_ON_ERROR );
-		$event      = $data['event'] ?? null;
-		$data       = $data['data'] ?? null;
-		$invoice_id = $data['id'] ?? null;
+		$data                = $request->get_body();
+		$data                = json_decode( $data, true, 512, JSON_THROW_ON_ERROR );
+		$event               = $data['event'] ?? null;
+		$data                = $data['data'] ?? null;
+		$data['event']       = $event;
+		$data['requestDate'] = date( 'Y-m-d H:i:s' );
+		$invoice_id          = $data['id'] ?? null;
 
 		$this->logger->execute( $data, 'INCOMING IPN', true );
 		if ( ! $event || ! $data || ! $invoice_id ) {
@@ -142,28 +143,28 @@ class BitPayIpnProcess {
 	}
 
 	private function process_confirmed( Invoice $bitpay_invoice, WC_Order $order ): void {
-		$this->validate_bitpay_status_in_available_statuses( $bitpay_invoice, array( 'confirmed' ) );
+		$this->validate_bitpay_status_in_available_statuses( $bitpay_invoice, array( 'confirmed', 'complete' ) );
 
 		$invoice_id             = $bitpay_invoice->getId();
 		$wordpress_order_status = $this->bitpay_wordpress_helper
 			->get_bitpay_gateway_option( 'bitpay_checkout_order_process_confirmed_status' );
 		if ( WcGatewayBitpay::IGNORE_STATUS_VALUE === $wordpress_order_status ) {
 			$order->add_order_note(
-				$this->get_start_order_note( $invoice_id ) . 'has changed to Confirmed.  The order status has not been updated due to your settings.'
+				$this->get_start_order_note( $invoice_id ) . 'has changed to Confirmed. The order status has not been updated due to your settings.'
 			);
 			return;
 		}
 
-		$new_status = $this->get_wc_order_statuses()[ $wordpress_order_status ] ?? 'Processing';
+		$new_status = $this->get_wc_order_statuses()[ $wordpress_order_status ] ?? null;
 		if ( ! $new_status ) {
 			$new_status             = 'Processing';
-			$wordpress_order_status = 'wc-pending';
+			$wordpress_order_status = 'pending';
 		}
 
 		$order->add_order_note(
 			$this->get_start_order_note( $invoice_id ) . 'has changed to ' . $new_status . '.'
 		);
-		if ( 'wc-completed' === $wordpress_order_status ) {
+		if ( 'wc-completed' === $wordpress_order_status ) { // statuses with 'wc' prefix.
 			$order->payment_complete();
 			$order->add_order_note( 'Payment Completed' );
 		} else {
@@ -174,6 +175,7 @@ class BitPayIpnProcess {
 
 	private function process_completed( Invoice $bitpay_invoice, WC_Order $order ): void {
 		$this->validate_bitpay_status_in_available_statuses( $bitpay_invoice, array( 'complete' ) );
+		$wc_order_status = $order->get_status();
 
 		$invoice_id             = $bitpay_invoice->getId();
 		$wordpress_order_status = $this->bitpay_wordpress_helper
@@ -181,19 +183,24 @@ class BitPayIpnProcess {
 		if ( WcGatewayBitpay::IGNORE_STATUS_VALUE === $wordpress_order_status ) {
 			$order->add_order_note(
 				$this->get_start_order_note( $invoice_id )
-				. 'has changed to Complete.  The order status has not been updated due to your settings.'
+				. 'has changed to Complete. The order status has not been updated due to your settings.'
 			);
 			return;
 		}
 
-		$new_status = $this->get_wc_order_statuses()[ $wordpress_order_status ] ?? 'Processing';
+		if ( ! $this->should_process_completed_action( $wc_order_status, $wordpress_order_status ) ) {
+			return;
+		}
+
+		$new_status = $this->get_wc_order_statuses()[ $wordpress_order_status ] ?? null;
+		$new_status = apply_filters( 'bitpay_checkout_order_process_complete_status', $new_status, $wordpress_order_status );
 		if ( ! $new_status ) {
 			$new_status             = 'Processing';
-			$wordpress_order_status = 'wc-pending';
+			$wordpress_order_status = 'pending';
 		}
 
 		$order->add_order_note( $this->get_start_order_note( $invoice_id ) . 'has changed to ' . $new_status . '.' );
-		if ( 'wc-completed' === $wordpress_order_status ) {
+		if ( 'wc-completed' === $wordpress_order_status ) { // statuses with 'wc' prefix.
 			$order->payment_complete();
 			$order->add_order_note( 'Payment Completed' );
 		} else {
@@ -244,8 +251,7 @@ class BitPayIpnProcess {
 
 		$invoice_id = $bitpay_invoice->getId();
 		if ( $underpaid_amount ) {
-			$order->add_order_note( $this->get_start_order_note( $invoice_id ) . $underpaid_amount . ' has been refunded.' );
-			$order->update_status( 'refunded', __( 'BitPay payment refunded', 'woocommerce' ) );
+			$this->process_refunded( $bitpay_invoice, $order );
 			return;
 		}
 
@@ -258,12 +264,20 @@ class BitPayIpnProcess {
 	}
 
 	private function process_refunded( Invoice $bitpay_invoice, WC_Order $order ): void {
+		if ( ! $this->should_process_refund() ) {
+			$order->add_order_note(
+				$this->get_start_order_note( $bitpay_invoice->getId() )
+				. 'has changed to Refunded. The order status has not been updated due to your settings.'
+			);
+			return;
+		}
+
 		$order->add_order_note( $this->get_start_order_note( $bitpay_invoice->getId() ) . 'has been refunded.' );
 		$order->update_status( 'refunded', __( 'BitPay payment refunded', 'woocommerce' ) );
 	}
 
 	private function process_processing( Invoice $bitpay_invoice, WC_Order $order ): void {
-		$this->validate_bitpay_status_in_available_statuses( $bitpay_invoice, array( 'paid' ) );
+		$this->validate_bitpay_status_in_available_statuses( $bitpay_invoice, array( 'paid', 'confirmed', 'complete' ) );
 		$invoice_id = $bitpay_invoice->getId();
 		$order->add_order_note( $this->get_start_order_note( $invoice_id ) . 'is paid and awaiting confirmation.' );
 
@@ -279,5 +293,33 @@ class BitPayIpnProcess {
 
 		$new_status = $this->get_wc_order_statuses()[ $wordpress_order_status ] ?? 'processing';
 		$order->update_status( $new_status, __( 'BitPay payment processing', 'woocommerce' ) );
+	}
+
+	private function has_final_status( WC_Order $order ): bool {
+		return \in_array( $order->get_status(), self::FINAL_WC_ORDER_STATUSES, true );
+	}
+
+	/**
+	 * We don't want to change complete order to process.
+	 *
+	 * @param string      $wc_order_status WC order status.
+	 * @param string|null $wordpress_order_status_from_settings status to event from BitPay settings.
+	 * @return bool
+	 */
+	private function should_process_completed_action( string $wc_order_status, ?string $wordpress_order_status_from_settings ): bool {
+		if ( 'completed' !== $wc_order_status ) {
+			return true;
+		}
+
+		if ( 'pending' === $wordpress_order_status_from_settings || 'processing' === $wordpress_order_status_from_settings ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private function should_process_refund(): bool {
+		$should_process_refund_status = $this->get_wc_order_statuses()['bitpay_checkout_order_process_refund'] ?? '1';
+		return '1' === $should_process_refund_status;
 	}
 }
