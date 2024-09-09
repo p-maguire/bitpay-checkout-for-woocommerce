@@ -6,6 +6,9 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 * Fixed a bug when the IPN/webhook is received with "complete" status
 * Add Unit & End2End tests
 
+# 5.5.1
+* Fixed issue with payment logo url
+
 # 5.5.0
 * Tested compatibility with WordPress 6.5.2
 

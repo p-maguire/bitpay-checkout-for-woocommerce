@@ -2,19 +2,12 @@
 Contributors: bitpay
 Tags: bitcoin, ether, ripple, bitcoin cash, ERC20, payments, bitpay, cryptocurrency, payment gateway
 Requires at least: 6.0
-<<<<<<< HEAD
 Tested up to: 6.4.2
 WC requires at least: 8.0.0
 WC tested up to: 8.5.2
 Requires PHP: 8.1
 Recommended PHP: 8.3
 Stable tag: 6.0.0
-=======
-Tested up to: 6.5.2
-Requires PHP: 8.0
-Recommended PHP: 8.0
-Stable tag: 5.5.1
->>>>>>> origin/master
 License: MIT License (MIT)
 License URI: https://github.com/bitpay/bitpay-checkout-for-woocommerce/blob/master/LICENSE
 
@@ -123,6 +116,9 @@ You can contact our support team via the following form https://bitpay.com/reque
 = 6.0.0 =
 * Fixed a bug when the IPN/webhook is received with "complete" status
 * * Add Unit & End2End tests
+
+= 5.5.1 =
+* Fixed issue with payment logo url
 
 = 5.5.0 =
 * Tested compatibility with WordPress 6.5.2
