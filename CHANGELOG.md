@@ -6,10 +6,22 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 * Fixed a bug when the IPN/webhook is received with "complete" status
 * Add Unit & End2End tests
 
+# 5.5.1
+* Fixed issue with payment logo url
+
+# 5.5.0
+* Tested compatibility with WordPress 6.5.2
+
+# 5.4.1
+* Improved webhook validation to improve timing issues
+
 # 5.4.0
 * Added compatibility with Checkout Blocks
 * Fixed Checkout Flow (BitPay Modal)
 * Tested compatibility with WordPress 6.4.2
+* Fixed issue with exception for missing DB data for plugin in admin panel
+* Improved logging IPN requests
+* Improved webhook handling to prevent an issue where Order IPN's could update a refunded Order's status to a processable Order status
 
 # 5.3.2
 * Fix typo "completed" for BitPay available statuses
