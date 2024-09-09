@@ -9,7 +9,7 @@
   ],
   "require": {
     "php": "^8.1",
-    "bitpay/sdk": "^8.0.0"
+    "bitpay/sdk": "^9.1.0"
   },
   "require-dev": {
     "wp-coding-standards/wpcs": "dev-develop",
