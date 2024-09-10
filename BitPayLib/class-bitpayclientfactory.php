@@ -35,7 +35,7 @@ class BitPayClientFactory {
 		return new PosClient(
 			$token,
 			$this->get_environment(),
-      'BitPay_Wordpress_v6.0.0'
+    	'BitPay_Wordpress_v6.0.0'
 		);
 	}
 
