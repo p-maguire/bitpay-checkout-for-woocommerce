@@ -344,4 +344,24 @@ class WcGatewayBitpay extends \WC_Payment_Gateway {
 
 		return $plugin_name . ' ' . $plugin_data['Version'];
 	}
+
+	public function admin_options(): void {
+		parent::admin_options();
+		$this->add_support_package_download_button();
+	}
+
+	private function add_support_package_download_button() {
+		?>
+			<div style="display: flex; align-items: center">
+				<div style="padding-right: 24px;">
+					<p style="color: #1d2327; font-weight: 600; font-size: 14px; padding: 20px 10px 20px 0; width: 200px">Support Package </p>
+				</div>
+				<div style="padding: 15px 0; margin-top: 9px;">
+					<button type="button" style="height: 36px;" class="button button-secondary" id="download_support_package">Download</button>
+					<p style="margin-top: 2px; margin-bottom: 0;">Select to download a package of files that can be used for technical support. No personal
+						information will be captured.</p>
+				</div>
+			</div>
+		<?php
+	}
 }

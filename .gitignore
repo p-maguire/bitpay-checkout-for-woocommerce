@@ -5,3 +5,6 @@ logs/*.*
 /.idea/
 /vendor
 /build
+.phpunit.result.cache
+tests/.env
+tests/Unit/wp-config.php

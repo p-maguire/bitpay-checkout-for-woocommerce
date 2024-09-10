@@ -25,6 +25,7 @@ class BitPayPluginSetup {
 	private BitPayPaymentSettings $bitpay_payment_settings;
 	private BitPayInvoiceCreate $bitpay_invoice_create;
 	private BitPayCheckoutTransactions $bitpay_checkout_transactions;
+	private BitPaySupportPackage $bitpay_support_package;
 
 	public function __construct() {
 		$this->bitpay_payment_settings      = new BitPayPaymentSettings();
@@ -39,6 +40,10 @@ class BitPayPluginSetup {
 			$factory,
 			new BitPayInvoiceFactory( $this->bitpay_payment_settings, $wordpress_helper ),
 			$this->bitpay_checkout_transactions,
+			$wordpress_helper,
+			$logger
+		);
+		$this->bitpay_support_package       = new BitPaySupportPackage(
 			$wordpress_helper,
 			$logger
 		);
@@ -80,6 +85,17 @@ class BitPayPluginSetup {
 						'methods'             => 'POST,GET',
 						'callback'            => array( $this, 'cancel_order' ),
 						'permission_callback' => '__return_true',
+					)
+				);
+				register_rest_route(
+					'bitpay/site',
+					'/health-status',
+					array(
+						'methods'             => 'GET',
+						'callback'            => array( $this->bitpay_support_package, 'get_zip' ),
+						'permission_callback' => function () {
+							return current_user_can( 'manage_woocommerce' );
+						},
 					)
 				);
 			}
