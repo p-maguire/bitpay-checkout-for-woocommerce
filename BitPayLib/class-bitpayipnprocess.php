@@ -24,17 +24,23 @@ class BitPayIpnProcess {
 	private BitPayLogger $logger;
 	private BitPayClientFactory $factory;
 	private BitPayWordpressHelper $bitpay_wordpress_helper;
+	private BitPayWebhookVerifier $bitpay_webhook_verifier;
+	private BitPayPaymentSettings $bitpay_payment_settings;
 
 	public function __construct(
 		BitPayCheckoutTransactions $bitpay_checkout_transactions,
 		BitPayClientFactory $factory,
 		BitPayWordpressHelper $bitpay_wordpress_helper,
-		BitPayLogger $logger
+		BitPayLogger $logger,
+		BitPayWebhookVerifier $bitpay_webhook_verifier,
+		BitPayPaymentSettings $bitpay_payment_settings,
 	) {
 		$this->bitpay_checkout_transactions = $bitpay_checkout_transactions;
 		$this->logger                       = $logger;
 		$this->factory                      = $factory;
 		$this->bitpay_wordpress_helper      = $bitpay_wordpress_helper;
+		$this->bitpay_webhook_verifier      = $bitpay_webhook_verifier;
+		$this->bitpay_payment_settings      = $bitpay_payment_settings;
 	}
 
 	public function execute( WP_REST_Request $request ): void {
@@ -45,9 +51,11 @@ class BitPayIpnProcess {
 		$data['event']       = $event;
 		$data['requestDate'] = date( 'Y-m-d H:i:s' );
 		$invoice_id          = $data['id'] ?? null;
+		$x_signature         = $request->get_header( 'x-signature' );
 
 		$this->logger->execute( $data, 'INCOMING IPN', true );
-		if ( ! $event || ! $data || ! $invoice_id ) {
+
+		if ( ! $event || ! $data || ! $invoice_id || ! $x_signature ) {
 			$this->logger->execute( 'Wrong IPN request', 'INCOMING IPN ERROR', false, true );
 			return;
 		}
@@ -57,6 +65,8 @@ class BitPayIpnProcess {
 			do_action( 'bitpay_checkout_woocoomerce_after_get_invoice', $bitpay_invoice );
 			$order = $this->bitpay_wordpress_helper->get_order( $bitpay_invoice->getOrderId() );
 			$this->validate_order( $order, $invoice_id );
+			$this->validate_webhook( $x_signature, $request->get_body(), $order );
+
 			$this->process( $bitpay_invoice, $order, $event['name'] );
 		} catch ( BitPayInvalidOrder $e ) { // phpcs:ignore
 			// do nothing.
@@ -295,10 +305,6 @@ class BitPayIpnProcess {
 		$order->update_status( $new_status, __( 'BitPay payment processing', 'woocommerce' ) );
 	}
 
-	private function has_final_status( WC_Order $order ): bool {
-		return \in_array( $order->get_status(), self::FINAL_WC_ORDER_STATUSES, true );
-	}
-
 	/**
 	 * We don't want to change complete order to process.
 	 *
@@ -321,5 +327,19 @@ class BitPayIpnProcess {
 	private function should_process_refund(): bool {
 		$should_process_refund_status = $this->get_wc_order_statuses()['bitpay_checkout_order_process_refund'] ?? '1';
 		return '1' === $should_process_refund_status;
+	}
+
+	private function validate_webhook( string $x_signature, string $webhook_body, WC_Order $order ): void {
+		$order_bitpay_token = $order->get_meta( BitPayCreateOrder::BITPAY_TOKEN_ORDER_METADATA_KEY );
+
+		if ( $order_bitpay_token &&
+			! $this->bitpay_webhook_verifier->verify(
+				$this->bitpay_payment_settings->get_bitpay_token(),
+				$x_signature,
+				$webhook_body
+			)
+		) {
+			throw new \Exception( 'IPN Request failed HMAC validation' );
+		}
 	}
 }

@@ -37,6 +37,9 @@
     ],
     "post-update-cmd": [
       "composer add-prefix"
+    ],
+    "phpcbf": [
+      "./vendor/bin/phpcbf BitPayLib"
     ]
   },
   "config": {
