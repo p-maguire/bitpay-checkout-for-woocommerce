@@ -34,7 +34,8 @@ class BitPayClientFactory {
 
 		return new PosClient(
 			$token,
-			$this->get_environment()
+			$this->get_environment(),
+			'BitPay_WooCommerce_v6.0.0'
 		);
 	}
 
