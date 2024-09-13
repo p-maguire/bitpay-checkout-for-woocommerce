@@ -93,7 +93,7 @@ class BitPaySupportPackage {
 					'tables'       => array(
 						array(
 							'table'  => '_bitpay_checkout_transactions',
-							'exists' => $wpdb->get_var( "SHOW TABLES LIKE '{$wpdb->prefix}_bitpay_checkout_transactions'" ) ? 'yes' : 'no',
+							'exists' => $wpdb->get_var( "SHOW TABLES LIKE '_bitpay_checkout_transactions'" ) ? 'yes' : 'no',
 						),
 					),
 				),
