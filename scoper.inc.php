@@ -39,6 +39,8 @@ return [
         'WP_User',
         'WC_Order',
         'WP_REST_Request',
+        'WP_Rest_Response',
+        'WP_Http_Response',
         'WC_Admin_Settings',
         'Automattic\WooCommerce\Blocks\Package',
         'Automattic\WooCommerce\Blocks\Payments\PaymentMethodRegistry',
