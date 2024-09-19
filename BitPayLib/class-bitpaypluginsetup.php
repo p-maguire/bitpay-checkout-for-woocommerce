@@ -47,7 +47,7 @@ class BitPayPluginSetup {
 		);
 		$this->bitpay_create_order          = new BitPayCreateOrder(
 			$this->bitpay_payment_settings
-    );
+	);
 		$this->bitpay_support_package       = new BitPaySupportPackage(
 			$wordpress_helper,
 			$logger
