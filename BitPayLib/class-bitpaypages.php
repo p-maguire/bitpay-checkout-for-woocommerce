@@ -30,15 +30,15 @@ class BitPayPages {
 		$restore_url = get_home_url() . '/wp-json/bitpay/cartfix/restore';
 
 		$test_mode = false;
-		$js_script = 'https://bitpay.com/bitpay.min.js';
+		$js_script = '../../js/bitpay.js';
 		if ( $this->bitpay_payment_settings->get_bitpay_environment() === 'test' ) {
 			$test_mode = true;
-			$js_script = 'https://test.bitpay.com/bitpay.min.js';
+			$js_script = '../../js/testbitpay.js';
 		}
 
 		$invoice_id = $_COOKIE['bitpay-invoice-id'] ?? null; // phpcs:ignore
 
-		wp_enqueue_script( 'remote-bitpay-js', $js_script, null, BitPayPluginSetup::VERSION, false ); // phpcs:ignore
+		wp_enqueue_script( 'remote-bitpay-js', plugins_url($js_script, __FILE__ ), null, BitPayPluginSetup::VERSION, false ); // phpcs:ignore
 		wp_enqueue_script( 'bitpay_thank_you', plugins_url( '../../js/bitpay_thank_you.js', __FILE__ ), null, BitPayPluginSetup::VERSION, false ); // phpcs:ignore
 		?>
 		<script type="text/javascript">
